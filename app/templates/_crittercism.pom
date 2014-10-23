@@ -1,0 +1,5 @@
+<dependency>
+  <groupId>com.crittercism</groupId>
+  <artifactId>crittercism-android-agent</artifactId>
+  <version>LATEST</version>
+</dependency>

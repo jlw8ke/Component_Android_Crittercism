@@ -60,24 +60,29 @@ var crittercismGenerator = yeoman.generators.Base.extend({
 		})
 	},
 	confirmFileLocations: function() {
+		var name;
 		if(this.project_type === 'Gradle') {
 			this.build_location = "./app/build.gradle"
+			name = "app/build.gradle"
 		} else {
 			this.build_location = "./pom.xml"
+			name = "pom.xml"
 		}
 		this.manifest_location = "./app/src/main/AndroidManifest.xml"
+		fail = function(file_name, file_location) {
+			self.log(chalk.error("Could not find ") + chalk.warning(file_name) + chalk.error(" at :")
+				+ chalk.warning(file_location))
+			self.log(chalk.error("Are you in the project root?"))
+			self.emit('end', false)
+		}
 
 		if(!fs.existsSync('app/')) {
 			this.log(chalk.error("Could not find app folder.  Are you in the project root?"))
 			this.emit('end', false)
 		} else if(!fs.existsSync(this.manifest_location)) {
-			this.log(chalk.error("Could not find AndroidManifest.xml at: ") + chalk.warning(this.manifest_location))
-			this.log(chalk.error("Are you in the project root?"))
-			this.emit('end', false)
+			fail("AndroidManifest.xml", this.manifest_location)
 		} else if(!fs.existsSync(this.build_location)) {
-			this.log(chalk.error("Could not find the app build file at: ") + chalk.warning(this.build_location))
-			this.log(chalk.error("Are you in the project room?"))
-			this.emit('end', false)
+			fail(name, this.build_location)
 		}
 	},
 	insertManifestPermissions: function() {
@@ -90,8 +95,45 @@ var crittercismGenerator = yeoman.generators.Base.extend({
 				manifest_file = string_utils.insert(manifest_file, entry+'\n', manifest_begin)
 			}
 		})
-		this.conflicter.force = true	
+		this.conflicter.force = true
+		this.log(chalk.success("Adding permissions in manifest..."))	
 		this.write(this.manifest_location, manifest_file)
+	},
+	insertDependency: function() {
+		var dependency_file = this.readFileAsString(this.build_location)
+		if(this.project_type === 'Gradle') {
+			var dependency_start = dependency_file.indexOf("{", 
+				dependency_file.indexOf("dependencies"))+1
+			var gradle = this.read("_crittercism.gradle").trim().split('\n')
+			if(this.ndk) {
+				var gradle_ndk = this.read("_crittercism_ndk.gradle").trim().split('\n')
+				gradle_ndk.forEach(function (entry) {
+					gradle.push(entry)
+				})
+			}
+
+			gradle.forEach(function (entry) {
+				if(!string_utils.contains(dependency_file, entry)) {
+					dependency_file = string_utils.insert(dependency_file, '\n\t'+entry, dependency_start)
+				}
+			})
+		} else {
+			var dependency_start = dependency_file.indexOf(">",
+				dependency_file.indexOf("dependencies"))+1
+			var pom = this.read("_crittercism.pom")
+			var pom_ndk = this.read("_crittercism_ndk.pom")
+			if(!string_utils.contains(dependency_file, pom)) {
+				dependency_file = string_utils.insert(dependency_file, '\n'+pom, dependency_start)
+			}
+			if(this.ndk && !string_utils.contains(dependency_file, pom_ndk)) {
+				dependency_file = string_utils.insert(dependency_file, '\n'+pom_ndk, dependency_start)
+			}
+		}
+		this.log(chalk.success("Adding dependencies in " + this.build_location + "..."))	
+		this.write(this.build_location, dependency_file)
+	},
+	initializeCrittercism: function() {
+		this.log(chalk.success("Initializing Crittercism..."))
 	}
 })
 
