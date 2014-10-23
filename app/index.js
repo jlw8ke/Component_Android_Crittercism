@@ -1,3 +1,4 @@
+var string_utils = require('./string_utils')
 var yeoman = require('yeoman-generator'),
 chalk = require('./chalk_themes'),
 fs = require('fs'),
@@ -80,7 +81,17 @@ var crittercismGenerator = yeoman.generators.Base.extend({
 		}
 	},
 	insertManifestPermissions: function() {
+		var manifest_file = this.readFileAsString(this.manifest_location)
+		var manifest_begin = manifest_file.indexOf("<application")
 
+		var permissions = self.read("_permissions.xml").trim().split('\n')
+		permissions.forEach(function (entry) {
+			if(!string_utils.contains(manifest_file, entry)) {
+				manifest_file = string_utils.insert(manifest_file, entry+'\n', manifest_begin)
+			}
+		})
+		this.conflicter.force = true	
+		this.write(this.manifest_location, manifest_file)
 	}
 })
 
