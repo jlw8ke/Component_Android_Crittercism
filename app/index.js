@@ -16,6 +16,8 @@ var crittercismGenerator = yeoman.generators.Base.extend({
 			this.log('\n')
 			if(code != false) {
 				this.log(chalk.success("Finished configuring Crittercism for your Android project"))
+				this.log(chalk.success("Please update ") + chalk.warning("strings.xml") 
+					+ chalk.success( " with your crittercism app id"))
 			} else {
 				this.log(chalk.error("Failed to configure crittercism"))
 				process.exit(1)
