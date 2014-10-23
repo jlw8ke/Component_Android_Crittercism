@@ -3,6 +3,7 @@ var yeoman = require('yeoman-generator'),
 chalk = require('./chalk_themes'),
 fs = require('fs'),
 spawn = require('child_process').spawn,
+path = require('path'),
 self
 
 var crittercismGenerator = yeoman.generators.Base.extend({
@@ -85,6 +86,24 @@ var crittercismGenerator = yeoman.generators.Base.extend({
 			fail(name, this.build_location)
 		}
 	},
+	searchForMainActivity: function() {
+		var done = this.async()
+		var find_activity = spawn(path.join(__dirname, "find_main_activity.sh"), 
+			[this.manifest_location])
+		find_activity.stdout.on('data', function (data) {
+			self.log(chalk.info("Found Main Activity: " + String(data)))
+			self.main_activity = String(data)
+		})
+		find_activity.on('exit', function(code) {
+			if(code === 1) {
+				self.log(chalk.error("Failed to find an activity with ") 
+					+ chalk.warning("android.intent.action.MAIN")
+					+ chalk.error(" in the manifest"))
+				self.emit('end', false)
+			}
+			done()
+		})
+	},
 	insertManifestPermissions: function() {
 		var manifest_file = this.readFileAsString(this.manifest_location)
 		var manifest_begin = manifest_file.indexOf("<application")
@@ -131,9 +150,6 @@ var crittercismGenerator = yeoman.generators.Base.extend({
 		}
 		this.log(chalk.success("Adding dependencies in " + this.build_location + "..."))	
 		this.write(this.build_location, dependency_file)
-	},
-	initializeCrittercism: function() {
-		this.log(chalk.success("Initializing Crittercism..."))
 	}
 })
 
