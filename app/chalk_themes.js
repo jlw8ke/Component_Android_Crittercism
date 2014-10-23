@@ -7,6 +7,8 @@ module.exports = {
 	error_bad : c.bold.bgRed,
 	warning : c.bold.yellow,
 	warning_light : c.yellow,
+	success_light : c.green,
 	success : c.bold.green,
 	success_bg : c.bold.bgGreen,
+	cyan : c.cyan
 }

@@ -150,6 +150,77 @@ var crittercismGenerator = yeoman.generators.Base.extend({
 		}
 		this.log(chalk.success("Adding dependencies in " + this.build_location + "..."))	
 		this.write(this.build_location, dependency_file)
+	}, 
+	initializeCrittercism: function() {
+		this.log(chalk.success("Initializing Crittercism in MainActivity: ") + chalk.warning(this.main_activity))
+		var activity_file_location = "./app/src/main/java/" + this.main_activity.replace(/\./g, "\/").trim().concat(".java")
+		var strings_file_location = "./app/src/main/res/values/strings.xml"
+
+		var string_code_block = this.read("_strings.xml").split('\n')[2]
+		var activity_code_block = this.read("_main_activity.java").split('\n')
+
+		if(!fs.existsSync(activity_file_location)) {
+			this.log(chalk.error("Could not find file: ") + chalk.warning(activity_file_location))
+			this.emit('end', false)
+		} else {
+			var activity_content = this.dest.read(activity_file_location).split('\n')
+			var hasImportStatement = string_utils.contains(activity_content.toString(), activity_code_block[0])
+			var hasInitStatement = string_utils.contains(activity_content.toString(), activity_code_block[1])
+
+			//Adding the import statement
+			if(!hasImportStatement) {
+				for (var i = 0; i < activity_content.length; i++) {
+					if(string_utils.contains(activity_content[i], "package")) {
+						activity_content.splice(i+1, 0, activity_code_block[0])
+						break;
+					}
+				}
+			}
+
+			//Adding the initialization statement
+			if(!hasInitStatement) {
+				for (var i = 0; i < activity_content.length; i++) {
+					if(string_utils.contains(activity_content[i], "super.onCreate(")) {
+						activity_content.splice(i+1, 0, "\t\t"+activity_code_block[1])
+						break;
+					}
+				}
+			}
+
+			//Commiting changes to the activity file
+			var output = ""
+			if(!(hasImportStatement && hasInitStatement)) {
+				activity_content.forEach(function (entry) {
+					output = output.concat(entry+'\n')
+				})
+				this.write(activity_file_location, output)
+			} else {
+				this.log(chalk.cyan("identical ") + activity_file_location)
+			}
+
+			//Adding strings resource
+			if(!fs.existsSync(strings_file_location)) {
+				this.copy(_strings.xml, strings_file_location)
+			} else {
+				var strings_content  = this.dest.read(strings_file_location).split('\n')
+				var hasStringsResource = string_utils.contains(strings_content.toString(), string_code_block)
+				if(!hasStringsResource) {
+					for(var i = 0; i < strings_content.length; i++) {
+						if(string_utils.contains(strings_content[i], "<resources>")) {
+							strings_content.splice(i+1, 0, string_code_block)
+							break;
+						}
+					}
+					output = ""
+					strings_content.forEach(function (entry) {
+						output = output.concat(entry+'\n')
+					})
+					this.write(strings_file_location, output)
+				} else {
+					this.log(chalk.cyan("identical ") + strings_file_location)
+				}
+			}
+		}
 	}
 })
 
