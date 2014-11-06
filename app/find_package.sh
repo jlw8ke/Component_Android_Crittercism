@@ -1,0 +1,1 @@
+grep 'package' $1 | cut -f2 -d'"' | cut -f2 -d"'" 

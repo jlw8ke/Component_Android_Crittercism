@@ -88,6 +88,19 @@ var crittercismGenerator = yeoman.generators.Base.extend({
 			fail(name, this.build_location)
 		}
 	},
+	searchForPackage: function() {
+		var done = this.async()
+		this.package = ""
+		var find_package = spawn(path.join(__dirname, "find_package.sh"),
+			[this.manifest_location])
+		find_package.stdout.on('data', function (data) {
+			self.package = String(data)
+			self.log(self.package)
+		})
+		find_package.on('exit', function() {
+			done()
+		})
+	},
 	searchForMainActivity: function() {
 		var done = this.async()
 		var find_activity = spawn(path.join(__dirname, "find_main_activity.sh"), 
@@ -95,6 +108,7 @@ var crittercismGenerator = yeoman.generators.Base.extend({
 		find_activity.stdout.on('data', function (data) {
 			self.log(chalk.info("Found Main Activity: " + String(data)))
 			self.main_activity = String(data)
+
 		})
 		find_activity.on('exit', function(code) {
 			if(code === 1) {
@@ -155,7 +169,16 @@ var crittercismGenerator = yeoman.generators.Base.extend({
 	}, 
 	initializeCrittercism: function() {
 		this.log(chalk.success("Initializing Crittercism in MainActivity: ") + chalk.warning(this.main_activity))
-		var activity_file_location = "./app/src/main/java/" + this.main_activity.replace(/\./g, "\/").trim().concat(".java")
+		var activity_file_location = "./app/src/main/java/"
+		if(this.main_activity.charAt(0) === ".") {
+			activity_file_location = activity_file_location 
+			+ this.package.replace(/\./g,"\/").trim() 
+			+ this.main_activity.replace(/\./g, "\/").trim().concat(".java")
+		} else {
+			activity_file_location = activity_file_location 
+			+ this.main_activity.replace(/\./g, "\/").trim().concat(".java")
+
+		}
 		var strings_file_location = "./app/src/main/res/values/strings.xml"
 
 		var string_code_block = this.read("_strings.xml").split('\n')[2]
